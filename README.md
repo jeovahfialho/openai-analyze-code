@@ -1,6 +1,6 @@
 # Python Code Advisor
 
-Um agente inteligente que analisa código Python e fornece sugestões de melhorias baseadas em boas práticas.
+Um analisador de código Python que fornece sugestões de melhorias baseadas em boas práticas. Este projeto é compatível com a API OpenAI, permitindo integração com ferramentas como Crew AI.
 
 ## Funcionalidades
 
@@ -8,14 +8,14 @@ Um agente inteligente que analisa código Python e fornece sugestões de melhori
 - Sugestões de melhorias de estilo
 - Verificação de complexidade
 - Recomendações de boas práticas
-- Histórico de análises
+- Interface compatível com OpenAI
+- Integração com Crew AI
 
 ## Requisitos
 
 - Python 3.8+
-- PostgreSQL
-- Redis
-- Docker e Docker Compose (opcional)
+- FastAPI
+- Docker (opcional)
 
 ## Instalação
 
@@ -25,160 +25,152 @@ git clone https://github.com/seu-usuario/python-code-advisor.git
 cd python-code-advisor
 ```
 
-2. Configure as variáveis de ambiente (copie o `.env.example` para `.env`):
+2. Configure o ambiente virtual:
 ```bash
-cp .env.example .env
+python -m venv venv
+source venv/bin/activate  # No Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-3. Execute com Docker:
+3. Execute o serviço:
 ```bash
-docker-compose up --build
+# Com Python diretamente
+uvicorn src.main:app --reload
+
+# Ou com Docker
+docker build -t python-code-advisor .
+docker run -p 8000:8000 python-code-advisor
 ```
 
 ## Uso
 
-A API estará disponível em `http://localhost:8000`
+### API Direta
 
-### Swagger UI (Documentação Interativa)
-Para testar a API de forma interativa, acesse:
-```
-http://localhost:8000/docs
-```
+O serviço expõe endpoints compatíveis com a API OpenAI:
 
-A interface Swagger UI permite que você:
-- Visualize todos os endpoints disponíveis
-- Teste as requisições diretamente no navegador
-- Veja os modelos de dados esperados
-- Entenda as respostas possíveis
-
-### Endpoints:
-- `POST /analyze-code`: Analisa um trecho de código Python
-- `GET /health`: Verifica o status do serviço
-
-### Exemplos de Uso
-
-1. **Função com problemas de estilo e documentação**
 ```bash
-curl -X POST http://localhost:8000/analyze-code \
+# Listar modelos disponíveis
+curl http://localhost:8000/models
+
+# Analisar código
+curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "code": "def Calculate_sum(numberOne, numberTwo):\n    Result = numberOne + numberTwo\n    return Result"
+    "model": "python-code-advisor-v1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "def MinhaFuncao(Param1, Param2):\n    Resultado = Param1 + Param2\n    return Resultado"
+      }
+    ]
   }'
 ```
 
-2. **Função com muitos parâmetros**
+### Integração com Crew AI
+
+1. Instale as dependências do Crew AI:
 ```bash
-curl -X POST http://localhost:8000/analyze-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "def process_data(name, age, city, country, phone, email, occupation):\n    print(f\"{name} from {city}\")"
-  }'
+pip install crewai openai
 ```
 
-3. **Código com problemas de complexidade**
-```bash
-curl -X POST http://localhost:8000/analyze-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "def complex_function(a, b):\n    if a > 0:\n        if b > 0:\n            if a > b:\n                if a % b == 0:\n                    return True\n    return False"
-  }'
+2. Configure o ambiente:
+```python
+# config.py
+import os
+
+os.environ["OPENAI_API_BASE"] = "http://localhost:8000"
+os.environ["OPENAI_API_KEY"] = "qualquer-string"
 ```
 
-4. **Classe sem documentação**
-```bash
-curl -X POST http://localhost:8000/analyze-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "class UserManager:\n    def __init__(self, username):\n        self.username = username\n    \n    def get_user(self):\n        return self.username"
-  }'
+3. Crie seu script de análise:
+```python
+# analyzer_crew.py
+from crewai import Agent, Task, Crew, Process
+
+code_analyzer = Agent(
+    role='Python Code Analyzer',
+    goal='Analyze Python code and suggest improvements',
+    backstory="Expert in Python code analysis and best practices",
+    model="python-code-advisor-v1",
+    verbose=True
+)
+
+analysis_task = Task(
+    description="Analyze this Python code...",
+    agent=code_analyzer
+)
+
+crew = Crew(
+    agents=[code_analyzer],
+    tasks=[analysis_task],
+    process=Process.sequential,
+    verbose=True
+)
+
+result = crew.kickoff()
+print(result)
 ```
 
-5. **Função com erro de sintaxe**
-```bash
-curl -X POST http://localhost:8000/analyze-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "def broken_function(:\n    print(\"This has syntax error\")"
-  }'
+## Exemplos de Uso
+
+### 1. Análise de Estilo
+```python
+# Exemplo de código para análise
+def CalculateSum(NumberOne, NumberTwo):
+    Result = NumberOne + NumberTwo
+    return Result
 ```
 
-6. **Múltiplas funções para testar complexidade**
-```bash
-curl -X POST http://localhost:8000/analyze-code \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "def func1():\n    pass\n\ndef func2():\n    pass\n\ndef func3():\n    pass\n\ndef func4():\n    pass\n\ndef func5():\n    pass\n\ndef func6():\n    pass"
-  }'
+Resposta:
+```
+Análise do Código Python:
+
+⚠️ Linha 1: Considere usar snake_case para nomes
+⚠️ A função 'CalculateSum' não possui docstring
 ```
 
-### Exemplos de Respostas
-
-1. **Resposta para problemas de estilo**:
-```json
-{
-  "suggestions": [
-    {
-      "type": "style",
-      "message": "Line 1: Consider using snake_case for variable names"
-    },
-    {
-      "type": "documentation",
-      "message": "Function 'Calculate_sum' lacks a docstring"
-    }
-  ],
-  "analysis_id": 1,
-  "created_at": "2024-01-17T12:00:00"
-}
+### 2. Análise de Complexidade
+```python
+def process_data(name, age, city, country, phone, email, occupation):
+    print(f"{name} from {city}")
 ```
 
-2. **Resposta para complexidade**:
-```json
-{
-  "suggestions": [
-    {
-      "type": "complexity",
-      "message": "Function 'process_data' has too many parameters"
-    },
-    {
-      "type": "documentation",
-      "message": "Function 'process_data' lacks a docstring"
-    }
-  ],
-  "analysis_id": 2,
-  "created_at": "2024-01-17T12:01:00"
-}
+Resposta:
 ```
+Análise do Código Python:
 
-## Interface Web
-
-Você também pode testar a API usando a interface Swagger UI disponível em:
+⚠️ A função 'process_data' tem muitos parâmetros
+⚠️ A função 'process_data' não possui docstring
 ```
-http://localhost:8000/docs
-```
-
----
 
 ## Estrutura do Projeto
 
 ```
 python-code-advisor/
-├── README.md
+├── src/
+│   ├── __init__.py
+│   ├── main.py                # API principal
+│   └── services/
+│       ├── __init__.py
+│       └── code_analyzer.py   # Lógica de análise
+├── tests/
+├── crew_examples/            # Exemplos de uso com Crew AI
 ├── requirements.txt
-├── docker-compose.yml
 ├── Dockerfile
-├── scripts/
-│   └── init.sql
-└── src/
-    ├── main.py
-    ├── config.py
-    └── services/
-        └── code_analyzer.py
+└── README.md
 ```
 
 ## Contribuindo
 
 1. Fork o projeto
-2. Crie sua Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a Branch (`git push origin feature/AmazingFeature`)
+2. Crie sua Feature Branch (`git checkout -b feature/NovaFeature`)
+3. Commit suas mudanças (`git commit -m 'Add nova feature'`)
+4. Push para a Branch (`git push origin feature/NovaFeature`)
 5. Abra um Pull Request
+
+## Notas Adicionais
+
+- O serviço é compatível com a API OpenAI, permitindo seu uso como um modelo personalizado
+- Pode ser integrado com Crew AI ou qualquer outra ferramenta que suporte a API OpenAI
+- Os endpoints principais são `/models` e `/chat/completions`
+- Suporta tanto endpoints com prefixo `/v1` quanto sem prefixo
