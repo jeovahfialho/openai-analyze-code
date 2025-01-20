@@ -49,7 +49,7 @@ pip install -r requirements.txt
 # Com Python diretamente
 uvicorn src.main:app --reload
 
-# Ou com Docker (Mais Aconselhado)
+# Ou com Docker
 docker build -t python-code-advisor .
 docker run -p 8000:8000 python-code-advisor
 ```
@@ -195,3 +195,10 @@ python-code-advisor/
 3. Commit suas mudanças (`git commit -m 'Add nova feature'`)
 4. Push para a Branch (`git push origin feature/NovaFeature`)
 5. Abra um Pull Request
+
+## Notas Adicionais
+
+- O serviço é compatível com a API OpenAI, permitindo seu uso como um modelo personalizado
+- Pode ser integrado com Crew AI ou qualquer outra ferramenta que suporte a API OpenAI
+- Os endpoints principais são `/models` e `/chat/completions`
+- Suporta tanto endpoints com prefixo `/v1` quanto sem prefixo
