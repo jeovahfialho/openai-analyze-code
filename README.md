@@ -21,7 +21,7 @@ Um analisador de código Python que fornece sugestões de melhorias baseadas em 
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/python-code-advisor.git
+git clone https://github.com/jeovahfialho/python-code-advisor.git
 cd python-code-advisor
 ```
 
