@@ -49,9 +49,85 @@ pip install -r requirements.txt
 # Com Python diretamente
 uvicorn src.main:app --reload
 
-# Ou com Docker
+# Ou com Docker (Apenas a Aplicação em Pythoh)
 docker build -t python-code-advisor .
 docker run -p 8000:8000 python-code-advisor
+```
+
+### Usando o Docker-Composer (Todos os Serviços)
+
+1. **Iniciar os serviços pela primeira vez**:
+```bash
+docker-compose up --build
+```
+
+2. **Parar os serviços**:
+```bash
+docker-compose down
+```
+
+3. **Reiniciar os serviços**:
+```bash
+docker-compose restart
+```
+
+4. **Reconstruir e reiniciar tudo do zero**:
+```bash
+# Para todos os serviços e remove volumes
+docker-compose down -v
+
+# Reconstrói e inicia
+docker-compose up --build
+```
+
+5. **Ver logs dos serviços**:
+```bash
+# Todos os serviços
+docker-compose logs
+
+# Serviço específico
+docker-compose logs web
+docker-compose logs db
+```
+
+### Acessando o Banco de Dados
+
+1. **Conectar ao PostgreSQL**:
+```bash
+docker exec -it python-code-advisor-db-1 psql -U user -d codeadvisor
+```
+
+2. **Comandos úteis do PostgreSQL**:
+```sql
+-- Listar todas as tabelas
+\dt
+
+-- Ver estrutura da tabela
+\d analysis_history
+
+-- Selecionar registros
+SELECT * FROM analysis_history;
+
+-- Sair do PostgreSQL
+\q
+```
+
+### Verificação de Serviços
+
+1. **Listar serviços em execução**:
+```bash
+docker-compose ps
+```
+
+2. **Verificar status da aplicação**:
+```bash
+curl http://localhost:8000/health
+```
+
+3. **Acessar a documentação Swagger**:
+Abra no navegador:
+```
+http://localhost:8000/docs
 ```
 
 ## Uso com Crew AI (Manual de Integração)

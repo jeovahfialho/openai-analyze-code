@@ -1,8 +1,12 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import datetime
 import ast
+from sqlalchemy.orm import Session
+from src.database.connection import get_db
+from src.models.analysis import Analysis
+
 
 app = FastAPI(title="Python Code Advisor - OpenAI Compatible")
 
@@ -110,7 +114,7 @@ class CodeVisitor(ast.NodeVisitor):
         
         self.generic_visit(node)
 
-async def process_completion(request: ChatCompletionRequest):
+async def process_completion(request: ChatCompletionRequest, db: Session = Depends(get_db)):
     """Função auxiliar para processar as completions"""
     try:
         # Extrai o código da última mensagem
@@ -120,6 +124,21 @@ async def process_completion(request: ChatCompletionRequest):
         # Analisa o código
         analyzer = CodeAnalyzer()
         suggestions = analyzer.analyze(code)
+
+        analysis_id = None
+        # Tenta salvar no banco de dados
+        if db:
+            try:
+                analysis = Analysis(
+                    code_snippet=code,
+                    suggestions=suggestions
+                )
+                db.add(analysis)
+                db.commit()
+                db.refresh(analysis)
+                analysis_id = analysis.id
+            except Exception as db_error:
+                print(f"Database error: {db_error}")
         
         # Formata a resposta em texto
         response_text = "Análise do Código Python:\n\n"
@@ -139,7 +158,7 @@ async def process_completion(request: ChatCompletionRequest):
         
         # Cria resposta no formato OpenAI
         response = ChatCompletionResponse(
-            id=f"pythoncodereview-{datetime.now().timestamp()}",
+            id=f"pythoncodereview-{analysis_id if analysis_id else datetime.now().timestamp()}",
             created=int(datetime.now().timestamp()),
             model="python-code-advisor-v1",
             choices=[
@@ -160,14 +179,13 @@ async def process_completion(request: ChatCompletionRequest):
         )
         
         return response
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 # Endpoints com prefixo v1
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
-async def chat_completion_v1(request: ChatCompletionRequest):
-    return await process_completion(request)
+async def chat_completion_v1(request: ChatCompletionRequest, db: Session = Depends(get_db)):
+    return await process_completion(request, db)
 
 @app.get("/v1/models")
 async def list_models_v1():
@@ -184,8 +202,9 @@ async def list_models_v1():
 
 # Endpoints sem prefixo v1 (para compatibilidade)
 @app.post("/chat/completions", response_model=ChatCompletionResponse)
-async def chat_completion(request: ChatCompletionRequest):
-    return await process_completion(request)
+async def chat_completion(request: ChatCompletionRequest, db: Session = Depends(get_db)):
+    return await process_completion(request, db)
+
 
 @app.get("/models")
 async def list_models():
@@ -204,3 +223,27 @@ async def list_models():
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "model": "python-code-advisor-v1"}
+
+@app.get("/test-db")
+async def test_db(db: Session = Depends(get_db)):
+    try:
+        # Tenta criar um registro de teste
+        analysis = Analysis(
+            code_snippet="def test(): pass",
+            suggestions=[{"type": "test", "message": "Test message"}]
+        )
+        db.add(analysis)
+        db.commit()
+        
+        # Busca o registro criado
+        result = db.query(Analysis).first()
+        
+        return {
+            "status": "success",
+            "data": {
+                "id": result.id,
+                "created_at": result.created_at
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
