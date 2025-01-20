@@ -1,6 +1,19 @@
 # Python Code Advisor
 
-Um analisador de código Python que fornece sugestões de melhorias baseadas em boas práticas. Este projeto é compatível com a API OpenAI, permitindo integração com ferramentas como Crew AI.
+Um analisador de código Python que fornece sugestões de melhorias baseadas em boas práticas.
+
+## 🌟 Interface Interativa (Swagger UI)
+
+Acesse a documentação interativa da API em:
+```
+http://localhost:8000/docs
+```
+
+Na interface Swagger, você pode:
+- Visualizar todos os endpoints disponíveis
+- Testar a API diretamente no navegador
+- Ver exemplos de requisições e respostas
+- Explorar os modelos de dados
 
 ## Funcionalidades
 
@@ -9,7 +22,6 @@ Um analisador de código Python que fornece sugestões de melhorias baseadas em 
 - Verificação de complexidade
 - Recomendações de boas práticas
 - Interface compatível com OpenAI
-- Integração com Crew AI
 
 ## Requisitos
 
@@ -21,7 +33,7 @@ Um analisador de código Python que fornece sugestões de melhorias baseadas em 
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/python-code-advisor.git
+git clone https://github.com/jeovahfialho/python-code-advisor.git
 cd python-code-advisor
 ```
 
@@ -37,22 +49,69 @@ pip install -r requirements.txt
 # Com Python diretamente
 uvicorn src.main:app --reload
 
-# Ou com Docker
+# Ou com Docker (Mais Aconselhado)
 docker build -t python-code-advisor .
 docker run -p 8000:8000 python-code-advisor
 ```
 
-## Uso
+## Uso com Crew AI (Manual de Integração)
 
-### API Direta
+### Preparação do Ambiente
 
-O serviço expõe endpoints compatíveis com a API OpenAI:
+1. Acesse app.crewai.com e faça login
+2. Vá para "Settings" ou "Configurations"
+3. Configure o modelo personalizado:
+   - Model Base URL: `http://localhost:8000`
+   - Tipo: custom-openai-compatible
+   - Model Name: `python-code-advisor-v1`
 
+### Registrando seu Agente
+
+1. No dashboard do Crew AI, vá para a seção de agentes ou integrações
+2. Configure seu agente com:
+   ```
+   Nome: Python Code Analyzer
+   Descrição: Expert in Python code analysis and best practices
+   Base URL: http://localhost:8000
+   Modelo: python-code-advisor-v1
+   ```
+
+### Capacidades do Agente
+
+O agente pode:
+- Analisar estilo de código Python
+- Verificar conformidade com PEP 8
+- Sugerir melhorias de código
+- Identificar problemas de complexidade
+
+## Exemplos de Uso
+
+### Via Swagger UI
+1. Acesse `http://localhost:8000/docs`
+2. Localize o endpoint `/chat/completions`
+3. Clique em "Try it out"
+4. Use o exemplo:
+```json
+{
+  "model": "python-code-advisor-v1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "def MinhaFuncao():\n    pass"
+    }
+  ]
+}
+```
+
+### Exemplos via Terminal (cURL)
+
+1. **Verificar Status do Serviço**
 ```bash
-# Listar modelos disponíveis
-curl http://localhost:8000/models
+curl http://localhost:8000/health
+```
 
-# Analisar código
+2. **Analisar Função com Problemas de Estilo**
+```bash
 curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
@@ -60,88 +119,58 @@ curl -X POST http://localhost:8000/chat/completions \
     "messages": [
       {
         "role": "user",
-        "content": "def MinhaFuncao(Param1, Param2):\n    Resultado = Param1 + Param2\n    return Resultado"
+        "content": "def CalcularSoma(PrimeiroNumero, SegundoNumero):\n    Resultado = PrimeiroNumero + SegundoNumero\n    return Resultado"
       }
     ]
   }'
 ```
 
-### Integração com Crew AI
-
-1. Instale as dependências do Crew AI:
+3. **Analisar Classe sem Documentação**
 ```bash
-pip install crewai openai
+curl -X POST http://localhost:8000/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "python-code-advisor-v1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "class UserManager:\n    def __init__(self, name):\n        self.name = name\n    def get_user(self):\n        return self.name"
+      }
+    ]
+  }'
 ```
 
-2. Configure o ambiente:
-```python
-# config.py
-import os
-
-os.environ["OPENAI_API_BASE"] = "http://localhost:8000"
-os.environ["OPENAI_API_KEY"] = "qualquer-string"
+4. **Analisar Função com Alta Complexidade**
+```bash
+curl -X POST http://localhost:8000/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "python-code-advisor-v1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "def process_data(a, b, c, d, e, f):\n    if a > 0:\n        if b > 0:\n            if c > 0:\n                return True\n    return False"
+      }
+    ]
+  }'
 ```
 
-3. Crie seu script de análise:
-```python
-# analyzer_crew.py
-from crewai import Agent, Task, Crew, Process
-
-code_analyzer = Agent(
-    role='Python Code Analyzer',
-    goal='Analyze Python code and suggest improvements',
-    backstory="Expert in Python code analysis and best practices",
-    model="python-code-advisor-v1",
-    verbose=True
-)
-
-analysis_task = Task(
-    description="Analyze this Python code...",
-    agent=code_analyzer
-)
-
-crew = Crew(
-    agents=[code_analyzer],
-    tasks=[analysis_task],
-    process=Process.sequential,
-    verbose=True
-)
-
-result = crew.kickoff()
-print(result)
+5. **Analisar Código com Múltiplas Funções**
+```bash
+curl -X POST http://localhost:8000/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "python-code-advisor-v1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "def func1():\n    pass\n\ndef func2():\n    pass\n\ndef func3():\n    pass\n\ndef func4():\n    pass\n\ndef func5():\n    pass\n\ndef func6():\n    pass"
+      }
+    ]
+  }'
 ```
 
-## Exemplos de Uso
-
-### 1. Análise de Estilo
-```python
-# Exemplo de código para análise
-def CalculateSum(NumberOne, NumberTwo):
-    Result = NumberOne + NumberTwo
-    return Result
-```
-
-Resposta:
-```
-Análise do Código Python:
-
-⚠️ Linha 1: Considere usar snake_case para nomes
-⚠️ A função 'CalculateSum' não possui docstring
-```
-
-### 2. Análise de Complexidade
-```python
-def process_data(name, age, city, country, phone, email, occupation):
-    print(f"{name} from {city}")
-```
-
-Resposta:
-```
-Análise do Código Python:
-
-⚠️ A função 'process_data' tem muitos parâmetros
-⚠️ A função 'process_data' não possui docstring
-```
+Cada exemplo retornará uma análise detalhada com sugestões de melhorias específicas para o código fornecido.
 
 ## Estrutura do Projeto
 
@@ -149,12 +178,11 @@ Análise do Código Python:
 python-code-advisor/
 ├── src/
 │   ├── __init__.py
-│   ├── main.py                # API principal
+│   ├── main.py           # API principal
 │   └── services/
 │       ├── __init__.py
-│       └── code_analyzer.py   # Lógica de análise
-├── tests/
-├── crew_examples/            # Exemplos de uso com Crew AI
+│       ├── code_analyzer.py
+│       └── crew_integration.py  # Preparado para futura integração
 ├── requirements.txt
 ├── Dockerfile
 └── README.md
@@ -167,10 +195,3 @@ python-code-advisor/
 3. Commit suas mudanças (`git commit -m 'Add nova feature'`)
 4. Push para a Branch (`git push origin feature/NovaFeature`)
 5. Abra um Pull Request
-
-## Notas Adicionais
-
-- O serviço é compatível com a API OpenAI, permitindo seu uso como um modelo personalizado
-- Pode ser integrado com Crew AI ou qualquer outra ferramenta que suporte a API OpenAI
-- Os endpoints principais são `/models` e `/chat/completions`
-- Suporta tanto endpoints com prefixo `/v1` quanto sem prefixo
