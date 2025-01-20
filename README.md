@@ -37,7 +37,7 @@ pip install -r requirements.txt
 # Com Python diretamente
 uvicorn src.main:app --reload
 
-# Ou com Docker
+# Ou com Docker (Mais Aconselhável)
 docker build -t python-code-advisor .
 docker run -p 8000:8000 python-code-advisor
 ```
