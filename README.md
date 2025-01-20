@@ -154,7 +154,6 @@ python-code-advisor/
 │       ├── __init__.py
 │       └── code_analyzer.py   # Lógica de análise
 ├── tests/
-├── crew_examples/            # Exemplos de uso com Crew AI
 ├── requirements.txt
 ├── Dockerfile
 └── README.md
